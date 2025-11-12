@@ -1,0 +1,57 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 3,
+      "type": "Maintainability",
+      "severity": "low",
+      "msg": "Imported name 'os' appears unused."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 13,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 8,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 10,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 15,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 0,
+      "type": "Invalid Regex",
+      "severity": "low",
+      "msg": "Regex lỗi: look-behind requires fixed-width pattern"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 5,
+      "type": "Maintainability",
+      "severity": "low",
+      "msg": "Function too long (>50 lines). Consider refactoring."
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "syntax_error": false
+  }
+}

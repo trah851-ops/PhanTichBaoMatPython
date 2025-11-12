@@ -1,0 +1,36 @@
+{
+  "issues": [
+    {
+      "file": "test_loi_1.py",
+      "lineno": 8,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "test_loi_1.py",
+      "lineno": 10,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "test_loi_1.py",
+      "lineno": 13,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "test_loi_1.py",
+      "lineno": 15,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "syntax_error": false
+  }
+}

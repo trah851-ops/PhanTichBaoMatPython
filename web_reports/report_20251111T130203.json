@@ -1,0 +1,85 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 0,
+      "type": "Invalid Regex",
+      "severity": "low",
+      "msg": "Regex lỗi: look-behind requires fixed-width pattern"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 24,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Hàm có nhiều return — xem xét hợp nhất logic."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 31,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Hàm có nhiều return — xem xét hợp nhất logic."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 42,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Hàm có nhiều return — xem xét hợp nhất logic."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 52,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Hàm có nhiều return — xem xét hợp nhất logic."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 47,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Khối try không có except hoặc finally."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 75,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Khối try không có except hoặc finally."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 48,
+      "type": "Security",
+      "severity": "medium",
+      "msg": "subprocess call without safe args and no shell=False explicit."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 39,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Mutable default parameter detected."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 45,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Mutable default parameter detected."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 55,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Mutable default parameter detected."
+    }
+  ],
+  "summary": {
+    "total": 11,
+    "syntax_error": false
+  }
+}

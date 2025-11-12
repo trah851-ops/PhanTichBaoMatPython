@@ -1,0 +1,92 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 31,
+      "type": "Lỗi cú pháp",
+      "severity": "medium",
+      "msg": "expected 'except' or 'finally' block (<unknown>, line 31)"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 42,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Gọi hàm chính trong module mà không có if __name__ == '__main__'."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 37,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 8,
+      "type": "Bảo mật",
+      "severity": "medium",
+      "msg": "Đọc hoặc ghi file mà không dùng context manager (with open)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 13,
+      "type": "Bảo mật",
+      "severity": "medium",
+      "msg": "Gọi đến network (requests) nhưng không timeout."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 33,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Hàm có return ở nhiều nhánh — xem xét hợp nhất logic."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 16,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 43,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 4,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng TODO hoặc FIXME trong code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 5,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng TODO hoặc FIXME trong code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 19,
+      "type": "Bảo mật",
+      "severity": "medium",
+      "msg": "Dùng biến môi trường nhạy cảm mà không kiểm tra."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 26,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Có khối try không có except hoặc finally."
+    }
+  ],
+  "summary": {
+    "total": 12,
+    "syntax_error": true
+  }
+}

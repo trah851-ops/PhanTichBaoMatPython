@@ -1,0 +1,50 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 4,
+      "type": "Insecure Library",
+      "severity": "medium",
+      "msg": "pickle có thể gây RCE."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 18,
+      "type": "Command Injection",
+      "severity": "high",
+      "msg": "subprocess.run được gọi với shell=True — có nguy cơ shell injection."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 18,
+      "type": "Command Injection",
+      "severity": "high",
+      "msg": "Tham số có thể bị taint: input()"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 23,
+      "type": "Command Injection",
+      "severity": "high",
+      "msg": "Tham số có thể bị taint: input()"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 35,
+      "type": "Command Injection",
+      "severity": "high",
+      "msg": "Tham số có thể bị taint: input()"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 18,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Gọi hàm chính trong module mà không có if __name__ == '__main__'."
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "syntax_error": false
+  }
+}

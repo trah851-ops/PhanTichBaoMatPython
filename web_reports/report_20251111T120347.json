@@ -1,0 +1,43 @@
+{
+  "issues": [
+    {
+      "file": "Trang_13_chap2.py",
+      "lineno": 0,
+      "type": "Invalid Regex",
+      "severity": "low",
+      "msg": "Regex lỗi: look-behind requires fixed-width pattern"
+    },
+    {
+      "file": "Trang_13_chap2.py",
+      "lineno": 13,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "Trang_13_chap2.py",
+      "lineno": 17,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "Trang_13_chap2.py",
+      "lineno": 3,
+      "type": "Maintainability",
+      "severity": "low",
+      "msg": "Function too long (>50 lines). Consider refactoring."
+    },
+    {
+      "file": "Trang_13_chap2.py",
+      "lineno": 3,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Mutable default parameter detected."
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "syntax_error": false
+  }
+}

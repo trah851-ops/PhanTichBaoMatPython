@@ -1,0 +1,71 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 5,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 30,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 46,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 50,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 52,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 58,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 84,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 86,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 9,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Hàm có return ở nhiều nhánh — xem xét hợp nhất logic."
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "syntax_error": false
+  }
+}

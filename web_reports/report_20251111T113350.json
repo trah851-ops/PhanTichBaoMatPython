@@ -1,0 +1,50 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 2,
+      "type": "Insecure Library",
+      "severity": "medium",
+      "msg": "pickle có thể gây RCE"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 6,
+      "type": "Shadowing Builtin",
+      "severity": "medium",
+      "msg": "Tên `list` che built-in."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 9,
+      "type": "Insecure Library",
+      "severity": "medium",
+      "msg": "pickle có thể gây RCE"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 18,
+      "type": "Dangerous Call",
+      "severity": "high",
+      "msg": "Dùng `eval()` là nguy hiểm."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 21,
+      "type": "Command Injection",
+      "severity": "high",
+      "msg": "Tham số có thể bị taint: {'propagated'}"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 18,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "syntax_error": false
+  }
+}

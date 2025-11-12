@@ -1,0 +1,22 @@
+{
+  "issues": [
+    {
+      "file": "Trang_13_chap2.py",
+      "lineno": 13,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "Trang_13_chap2.py",
+      "lineno": 17,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "syntax_error": false
+  }
+}

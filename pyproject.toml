@@ -1,0 +1,10 @@
+[project]
+name = "python-static-analyzer"
+version = "0.1.0"
+description = "Lightweight static analyzer (pure-Python)"
+authors = [{name="You"}]
+requires-python = ">=3.8"
+
+[build-system]
+requires = ["setuptools","wheel"]
+build-backend = "setuptools.build_meta"

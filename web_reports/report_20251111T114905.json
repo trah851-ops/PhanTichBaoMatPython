@@ -1,0 +1,22 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 4,
+      "type": "Insecure Library",
+      "severity": "medium",
+      "msg": "pickle có thể gây RCE."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 18,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Gọi hàm chính trong module mà không có if __name__ == '__main__'."
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "syntax_error": false
+  }
+}

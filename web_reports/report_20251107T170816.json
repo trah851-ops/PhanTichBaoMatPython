@@ -1,0 +1,24 @@
+{
+  "issues": [
+    {
+      "type": "Style",
+      "lineno": 0,
+      "msg": "Có dòng chứa print() dùng cho debug.",
+      "severity": "low",
+      "rule_id": "P007",
+      "file": "loi_2.py"
+    },
+    {
+      "type": "Style",
+      "lineno": 0,
+      "msg": "Có dòng chứa print() dùng cho debug.",
+      "severity": "low",
+      "rule_id": "P007",
+      "file": "loi_2.py"
+    }
+  ],
+  "summary": {
+    "Style": 2,
+    "total": 2
+  }
+}

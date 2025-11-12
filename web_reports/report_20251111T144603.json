@@ -1,0 +1,50 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 3,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Mutable default parameter detected in function 'add_to_list'."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 13,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 17,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Phát hiện print() — debug code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 0,
+      "type": "Invalid Regex",
+      "severity": "low",
+      "msg": "Regex lỗi: look-behind requires fixed-width pattern"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 3,
+      "type": "Maintainability",
+      "severity": "low",
+      "msg": "Function too long (>50 lines). Consider refactoring."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 3,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Mutable default parameter detected."
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "syntax_error": false
+  }
+}

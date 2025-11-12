@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PyScan - Python Static Analyzer</title>
+
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/firacode@6.2.0/distr/css/fira_code.css" rel="stylesheet"/>
+
+  <!-- CodeMirror 6 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@6.65.7/lib/codemirror.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@6.65.7/theme/dracula.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@6.65.7/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@6.65.7/mode/python/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@6.65.7/addon/selection/active-line.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@6.65.7/addon/edit/matchbrackets.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --success: #06d6a0;
+      --danger: #ef476f;
+      --warning: #ffd166;
+      --dark: #121212;
+      --light: #f8f9fa;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+      min-height: 100vh;
+      color: #2d3436;
+      transition: all 0.3s ease;
+    }
+
+    .dark-mode {
+      background: #0f0f0f !important;
+      color: #e0e0e0;
+    }
+
+    .dark-mode .card {
+      background: #1e1e1e !important;
+      border-color: #333 !important;
+      color: #ddd;
+    }
+
+    .dark-mode .form-control,
+    .dark-mode .form-select {
+      background: #2d2d2d !important;
+      border-color: #444 !important;
+      color: #e0e0e0 !important;
+    }
+
+    .dark-mode .table {
+      --bs-table-bg: #1e1e1e;
+      --bs-table-striped-bg: #252525;
+      color: #ddd;
+    }
+
+    .navbar {
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    }
+    .dark-mode .navbar { background: rgba(30, 30, 30, 0.95) !important; }
+
+    .hero-title {
+      font-weight: 700;
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, var(--primary), #7209b7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+    }
+    .card:hover { transform: translateY(-4px); }
+
+    .btn-primary {
+      background: var(--primary);
+      border: none;
+      border-radius: 12px;
+      padding: 10px 24px;
+      font-weight: 600;
+    }
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .editor-container {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .dark-mode .editor-container { border-color: #444; }
+
+    .CodeMirror {
+      height: 300px !important;
+      font-size: 14px;
+      border-radius: 12px;
+      font-family: 'Fira Code', monospace;
+    }
+    .CodeMirror-gutters {
+      background: #f8f9fa;
+      border-right: 1px solid #ddd;
+    }
+    .dark-mode .CodeMirror-gutters {
+      background: #252526;
+      border-right: 1px solid #444;
+    }
+    .CodeMirror-linenumber { color: #6c757d !important; }
+    .dark-mode .CodeMirror-linenumber { color: #858585 !important; }
+
+    .CodeMirror-line.error-line {
+      background: rgba(239, 71, 111, 0.15) !important;
+      border-left: 4px solid var(--danger);
+    }
+    .dark-mode .CodeMirror-line.error-line {
+      background: rgba(239, 71, 111, 0.25) !important;
+    }
+
+    .error-marker::after {
+      content: "!";
+      position: absolute;
+      left: -12px;
+      top: 2px;
+      background: var(--danger);
+      color: white;
+      font-weight: bold;
+      font-size: 10px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 14px;
+    }
+
+    .severity-high { background: #ffe6e9; border-left: 4px solid var(--danger); }
+    .severity-medium { background: #fff7e6; border-left: 4px solid var(--warning); }
+    .severity-low { background: #e6fff2; border-left: 4px solid var(--success); }
+    .dark-mode .severity-high { background: rgba(239, 71, 111, 0.2); }
+    .dark-mode .severity-medium { background: rgba(255, 209, 102, 0.2); }
+    .dark-mode .severity-low { background: rgba(6, 214, 160, 0.2); }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: #6c757d;
+      cursor: pointer;
+    }
+    .dark-mode .theme-toggle { color: #aaa; }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 2rem; }
+      .CodeMirror { height: 250px !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#">
+        <span class="text-primary">Py</span>Scan
+      </a>
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
+        <i class="bi bi-moon-stars-fill"></i>
+      </button>
+    </div>
+  </nav>
+
+  <div class="container py-5">
+    <!-- Hero -->
+    <div class="text-center mb-5">
+      <h1 class="hero-title mb-3">Python Static Analyzer</h1>
+      <p class="lead text-muted">Scan your Python code for bugs, security issues, and style violations.</p>
+    </div>
+
+    <!-- Upload / Paste -->
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-4"><i class="bi bi-gear-fill text-primary"></i> Scan Configuration</h5>
+        <form id="scanForm" enctype="multipart/form-data">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Upload Python File</label>
+              <input type="file" class="form-control" id="file" name="file" accept=".py">
+              <small class="text-muted">Only .py files are allowed</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Custom Rules (JSON)</label>
+              <input type="text" class="form-control" id="rules" name="rules" value="custom_rules.json">
+            </div>
+          </div>
+          <div class="mt-3">
+            <label class="form-label">Or Paste Code</label>
+            <div class="editor-container">
+              <textarea id="paste_code" name="paste_code"># Paste Python code here...</textarea>
+            </div>
+          </div>
+          <div class="mt-4 d-flex align-items-center">
+            <button type="button" id="runBtn" class="btn btn-primary d-flex align-items-center">
+              <span class="spinner-border spinner-border-sm me-2 loading-spinner" style="display:none;" role="status"></span>
+              <i class="bi bi-play-fill me-2"></i> Run Scan
+            </button>
+            <span id="status" class="ms-3 text-muted"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultArea" class="card" style="display:none;">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h5 class="card-title mb-0"><i class="bi bi-bug-fill text-danger"></i> Scan Report</h5>
+          <div>
+            <button id="openReport" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-text"></i> HTML</button>
+            <button id="openJSON" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-code"></i> JSON</button>
+          </div>
+        </div>
+        <div id="summary" class="alert alert-info mb-4"></div>
+        <div class="table-responsive">
+          <table id="issuesTable" class="table table-hover align-middle">
+            <thead><tr><th>File</th><th>Line</th><th>Type</th><th>Severity</th><th>Message</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ===== CodeMirror Editor =====
+    let editor;
+    $(document).ready(function () {
+      editor = CodeMirror.fromTextArea(document.getElementById('paste_code'), {
+        mode: 'python',
+        theme: 'dracula',
+        lineNumbers: true,
+        styleActiveLine: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: false
+      });
+    });
+
+    // ===== Theme Toggle =====
+    const themeToggle = document.getElementById('themeToggle');
+    const icon = themeToggle.querySelector('i');
+
+    function applyTheme() {
+      const isDark = localStorage.getItem('theme') === 'dark';
+      document.body.classList.toggle('dark-mode', isDark);
+      icon.classList.replace('bi-moon-stars-fill', isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill');
+      icon.classList.replace('bi-sun-fill', !isDark ? 'bi-moon-stars-fill' : 'bi-sun-fill');
+      if (editor) editor.setOption('theme', isDark ? 'dracula' : 'default');
+    }
+    applyTheme();
+
+    themeToggle.addEventListener('click', () => {
+      const isDark = !document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      applyTheme();
+    });
+
+    // ===== Tải file → hiển thị trong editor =====
+    $('#file').on('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.py')) {
+        showToast('Only .py files are allowed.', 'warning');
+        this.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = e => {
+        editor.setValue(e.target.result);
+        showToast(`Loaded: ${file.name}`, 'success');
+      };
+      reader.readAsText(file);
+    });
+
+    // ===== Toast =====
+    function showToast(message, type = 'info') {
+      const toast = $(`
+        <div class="toast align-items-center text-white bg-${type} border-0 mb-2">
+          <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        </div>`);
+      $('.toast-container').append(toast);
+      const bsToast = new bootstrap.Toast(toast[0]);
+      bsToast.show();
+      setTimeout(() => toast.remove(), 6000);
+    }
+
+    // ===== Highlight dòng lỗi =====
+    function highlightErrorLines(issues) {
+      $('.CodeMirror-line').removeClass('error-line');
+      $('.error-marker').remove();
+      issues.forEach(issue => {
+        const line = (issue.lineno || 0) - 1;
+        if (line >= 0) {
+          const lineEl = $(`.CodeMirror-line:eq(${line})`);
+          lineEl.addClass('error-line');
+          if (!lineEl.find('.error-marker').length) {
+            lineEl.prepend('<span class="error-marker"></span>');
+          }
+        }
+      });
+      if (issues.length > 0) {
+        editor.scrollIntoView({ line: issues[0].lineno - 1, ch: 0 }, 200);
+      }
+    }
+
+    // ===== Run Scan (GIỮ NGUYÊN LOGIC CŨ) =====
+    $('#runBtn').click(function () {
+      const form = $('#scanForm')[0];
+      const data = new FormData(form);
+      data.set('paste_code', editor.getValue()); // Ghi đè code từ editor
+      const btn = $(this);
+      const spinner = btn.find('.loading-spinner');
+      const status = $('#status');
+
+      if (!data.get('file').name && !editor.getValue().trim()) {
+        showToast('Please upload a file or paste code.', 'danger');
+        return;
+      }
+
+      btn.prop('disabled', true);
+      spinner.show();
+      status.text('Analyzing code...');
+
+      $.ajax({
+        url: '/scan',
+        type: 'POST',
+        data: data,
+        processData: false,
+        contentType: false,
+        success: function (resp) {
+          spinner.hide();
+          btn.prop('disabled', false);
+          if (!resp.ok) return showToast('Scan failed: ' + resp.error, 'danger');
+
+          status.text(`Found ${resp.issues} issue(s)`);
+          $('#resultArea').fadeIn();
+
+          // Mở báo cáo (giữ nguyên logic backend)
+          $('#openReport').off('click').on('click', () => window.open('/reports/' + resp.html, '_blank'));
+          $('#openJSON').off('click').on('click', () => window.open('/reports/' + resp.json, '_blank'));
+
+          // Tải JSON và hiển thị bảng (giữ nguyên logic)
+          $.getJSON('/reports/' + resp.json, function (data) {
+            const issues = data.issues || [];
+            const tbody = $('#issuesTable tbody').empty();
+
+            let high = 0, med = 0, low = 0;
+            issues.forEach(i => {
+              const s = (i.severity || '').toLowerCase();
+              if (s === 'high') high++;
+              else if (s === 'medium') med++;
+              else low++;
+            });
+
+            issues.forEach(i => {
+              const sev = (i.severity || '').toLowerCase();
+              const badge = sev === 'high' ? 'danger' : sev === 'medium' ? 'warning' : 'success';
+              const cls = sev === 'high' ? 'severity-high' : sev === 'medium' ? 'severity-medium' : 'severity-low';
+              tbody.append(`
+                <tr class="${cls}" style="cursor:pointer;" onclick="editor.scrollIntoView({line:${(i.lineno||1)-1}, ch:0});">
+                  <td><code>${i.file || 'inline'}</code></td>
+                  <td><strong>${i.lineno || '-'}</strong></td>
+                  <td><small class="text-muted">${i.type || 'unknown'}</small></td>
+                  <td><span class="badge bg-${badge}">${i.severity || 'low'}</span></td>
+                  <td>${i.msg || ''}</td>
+                </tr>`);
+            });
+
+            const total = issues.length;
+            $('#summary').html(`
+              <strong>Total Issues:</strong> ${total}
+              <span class="ms-3 badge bg-danger">High: ${high}</span>
+              <span class="ms-1 badge bg-warning text-dark">Medium: ${med}</span>
+              <span class="ms-1 badge bg-success">Low: ${low}</span>
+            `);
+
+            highlightErrorLines(issues); // Highlight trong editor
+          }).fail(() => showToast('Failed to load report.', 'danger'));
+
+          showToast('Scan completed successfully!', 'success');
+        },
+        error: function (_, __, err) {
+          spinner.hide();
+          btn.prop('disabled', false);
+          status.text('Request failed');
+          showToast('Network error: ' + err, 'danger');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

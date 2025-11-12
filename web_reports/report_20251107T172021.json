@@ -1,0 +1,134 @@
+{
+  "issues": [
+    {
+      "file": "pasted_code.py",
+      "lineno": 33,
+      "type": "Lỗi cú pháp",
+      "severity": "medium",
+      "msg": "expected 'except' or 'finally' block (<unknown>, line 33)"
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 47,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Gọi hàm chính trong module mà không có if __name__ == '__main__'."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 41,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 43,
+      "type": "Logic",
+      "severity": "medium",
+      "msg": "Có biến được gán lại nhiều lần trong cùng hàm (có thể ghi đè ngoài ý muốn)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 10,
+      "type": "Bảo mật",
+      "severity": "medium",
+      "msg": "Đọc hoặc ghi file mà không dùng context manager (with open)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 61,
+      "type": "Bảo mật",
+      "severity": "medium",
+      "msg": "Đọc hoặc ghi file mà không dùng context manager (with open)."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 15,
+      "type": "Bảo mật",
+      "severity": "medium",
+      "msg": "Gọi đến network (requests) nhưng không timeout."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 37,
+      "type": "Logic",
+      "severity": "low",
+      "msg": "Hàm có return ở nhiều nhánh — xem xét hợp nhất logic."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 21,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 48,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 54,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 67,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 71,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng chứa print() dùng cho debug."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 6,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng TODO hoặc FIXME trong code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 7,
+      "type": "Style",
+      "severity": "low",
+      "msg": "Có dòng TODO hoặc FIXME trong code."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 18,
+      "type": "Bảo mật",
+      "severity": "medium",
+      "msg": "Dùng biến môi trường nhạy cảm mà không kiểm tra."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 28,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Có khối try không có except hoặc finally."
+    },
+    {
+      "file": "pasted_code.py",
+      "lineno": 60,
+      "type": "Logic",
+      "severity": "high",
+      "msg": "Có khối try không có except hoặc finally."
+    }
+  ],
+  "summary": {
+    "total": 18,
+    "syntax_error": true
+  }
+}

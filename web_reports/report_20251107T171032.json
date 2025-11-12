@@ -1,0 +1,14 @@
+{
+  "issues": [
+    {
+      "type": "Lỗi Cú pháp",
+      "lineno": 31,
+      "msg": "SyntaxError: expected 'except' or 'finally' block",
+      "severity": "medium",
+      "rule_id": null
+    }
+  ],
+  "summary": {
+    "total": 1
+  }
+}
