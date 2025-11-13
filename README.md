@@ -45,3 +45,59 @@ Chỉ cần clone repository này. Dự án không yêu cầu thư viện bên n
 ```bash
 git clone [URL_CỦA_REPOSITORY]
 cd python_static_analyzer
+2. Chạy qua dòng lệnh (CLI)
+Bạn có thể chạy phân tích trực tiếp trên một tệp hoặc một thư mục. Kết quả có thể được xuất ra tệp HTML (để xem) và JSON (cho CI/CD).
+
+Bash
+
+python cli.py path/to/file_or_dir --out-html report.html --out-json report.json
+3. Chạy Giao diện Web (Web UI)
+(Giả sử bạn có một app.py để chạy máy chủ web, dựa trên demo)
+
+Bash
+
+# Cài đặt máy chủ (ví dụ)
+pip install Flask
+# Chạy máy chủ
+python app.py
+Sau đó, mở http://127.0.0.1:5000 trên trình duyệt của bạn.
+
+🛠️ Hệ thống Quy tắc
+Hệ thống quy tắc được phân chia theo 3 engine:
+
+Quy tắc Regex (Tùy chỉnh):
+
+Chỉnh sửa tệp custom_rules.json để thêm/xóa/sửa các quy tắc cho Engine 1.
+
+Tệp này lý tưởng cho việc tìm kiếm các từ khóa cụ thể, bí mật (secrets), hoặc các mẫu code đơn giản.
+
+Quy tắc Linting (Hardcode):
+
+Các quy tắc về chất lượng code và logic được định nghĩa trực tiếp trong tệp analyzer/ast_rules.py.
+
+Quy tắc Bảo mật Lõi (Hardcode):
+
+Các quy tắc bảo mật chuyên sâu (bao gồm các "Sink" cho Taint Analysis) được định nghĩa trực tiếp trong tệp analyzer/core.py (bên trong lớp Analyzer).
+
+🔎 Công cụ Gợi ý Quy tắc (Rule Discovery)
+Dự án bao gồm một công cụ hỗ trợ (rule_discovery.py) để giúp bạn tạo các quy tắc regex mới từ một cơ sở mã nguồn hiện có.
+
+Nó quét mã nguồn của bạn để tìm các mẫu lặp lại và tạo ra một tệp candidates.json.
+
+Cách chạy:
+
+Bash
+
+python rule_discovery.py path/to/your_code --out candidates.json --min-count 2
+Sau đó, bạn có thể xem lại tệp candidates.json, chọn các mẫu hữu ích và sao chép chúng vào tệp custom_rules.json chính của bạn.
+
+🧪 Kiểm thử (Testing)
+Dự án sử dụng pytest để kiểm thử.
+
+Bash
+
+# Cài đặt pytest
+pip install pytest
+
+# Chạy toàn bộ bộ test
+pytest
