@@ -54,3 +54,53 @@ Bạn có thể phân tích trực tiếp một tệp hoặc thư mục.
 Kết quả có thể xuất ra HTML (xem trực quan) và JSON (cho CI/CD).
 
 python cli.py path/to/file_or_dir --out-html report.html --out-json report.json
+
+3️⃣ Chạy Giao diện Web (Web UI)
+
+Ví dụ: bạn có app.py để chạy máy chủ Flask.
+
+# Cài đặt Flask (nếu chưa có)
+pip install Flask
+
+# Chạy máy chủ
+python app.py
+
+
+Sau đó, mở trình duyệt và truy cập:
+
+👉 http://127.0.0.1:5000
+
+🛠️ Hệ thống Quy tắc (Rule System)
+
+Hệ thống quy tắc được chia làm 3 loại, tương ứng với 3 engine:
+
+1. Quy tắc Regex (tùy chỉnh)
+
+Lưu trong custom_rules.json
+
+Dành cho việc tìm mẫu chuỗi, secrets, hoặc từ khóa nguy hiểm
+
+Có thể thêm mới hoặc điều chỉnh linh hoạt.
+
+2. Quy tắc Linting (AST)
+
+Được định nghĩa sẵn trong analyzer/ast_rules.py
+
+Kiểm tra chất lượng và logic code.
+
+3. Quy tắc Bảo mật Cốt lõi (SAST)
+
+Định nghĩa trong analyzer/core.py (trong lớp Analyzer)
+
+Bao gồm các Sink và Taint Source cho phân tích luồng dữ liệu.
+
+
+🧪 Kiểm thử (Testing)
+
+Dự án sử dụng pytest để kiểm thử tự động.
+
+# Cài đặt pytest
+pip install pytest
+
+# Chạy toàn bộ bộ test
+pytest
