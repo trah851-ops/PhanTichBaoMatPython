@@ -1,2 +1,9 @@
-flask
-werkzeug
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Optional: for advanced fuzzing
+# atheris==2.3.0
+
+# Development
+# pytest==7.4.3
+# pytest-cov==4.1.0
