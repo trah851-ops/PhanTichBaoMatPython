@@ -245,15 +245,14 @@ MIT License - Tự do sử dụng cho mọi mục đích
 
 ## 📧 Liên Hệ
 
-- **Author**: [Tên bạn]
-- **Email**: your.email@example.com
+- **Author**: [Đậu Hồng Trà]
+- **Email**: trah851@gmail.com
 - **GitHub**: https://github.com/yourusername
 
 ---
 
-## 🎓 Dự Án Tốt Nghiệp
-
-Đây là đồ án tốt nghiệp về **An Toàn Thông Tin** - chủ đề **Static Application Security Testing (SAST) cho Python**.
+## 🎓 Dự Án CNTT
+chủ đề **Static Application Security Testing (SAST) cho Python**.
 
 **Điểm mạnh:**
 - ✅ Tích hợp 3 kỹ thuật phân tích (AST + Taint + Regex)
@@ -273,7 +272,7 @@ MIT License - Tự do sử dụng cho mọi mục đích
 
 ---
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by [Đậu Hồng Trà]
 =======
 
 ---
