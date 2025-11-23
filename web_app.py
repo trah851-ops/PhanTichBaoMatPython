@@ -1,4 +1,4 @@
-# web_app.py - FIXED VERSION WITH COMPLETE HTML REPORTS
+# web_app.py - COMPLETELY FIXED VERSION v2.2.2
 from flask import Flask, render_template, request, jsonify, send_file
 import os
 import json
@@ -8,8 +8,9 @@ from datetime import datetime
 import shutil
 from pathlib import Path
 from analyzer.core import Analyzer
-from analyzer.fuzzing import run_fuzz_on_analyzer, is_fuzzing_available
+from analyzer.fuzzing import fuzz_user_code, fuzz_uploaded_file, is_fuzzing_available
 import threading
+import time
 
 app = Flask(__name__)
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(REPORT_FOLDER, exist_ok=True)
 
 analyzer = Analyzer()
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.2"
 
 # Global fuzzing state
 fuzzing_state = {
@@ -37,7 +38,7 @@ def index():
 
 @app.route("/scan", methods=["POST"])
 def scan():
-    """Quét code Python - hỗ trợ paste, single file, và ZIP"""
+    """Quét code Python"""
     results = {"issues": [], "summary": {"total": 0, "files_scanned": 0}}
     temp_extract_path = None
 
@@ -46,7 +47,6 @@ def scan():
         uploaded_file = request.files.get("file")
         scan_project = request.form.get("scan_project") == "true"
 
-        # 1. Quét từ paste code
         if paste_code:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
                 f.write(paste_code)
@@ -59,22 +59,18 @@ def scan():
             results["summary"]["files_scanned"] = 1
             os.unlink(temp_path)
 
-        # 2. Quét file upload (Python file hoặc ZIP)
         elif uploaded_file:
             filename = uploaded_file.filename
             
-            # Kiểm tra file ZIP
             if filename.endswith(".zip"):
                 print("[Web] Đang xử lý file ZIP...")
                 temp_extract_path = tempfile.mkdtemp()
                 zip_path = os.path.join(UPLOAD_FOLDER, filename)
                 uploaded_file.save(zip_path)
                 
-                # Giải nén
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(temp_extract_path)
                 
-                # Quét tất cả file .py trong ZIP
                 for root, dirs, files in os.walk(temp_extract_path):
                     for file in files:
                         if file.endswith(".py"):
@@ -88,13 +84,11 @@ def scan():
                                     results["issues"].append(issue)
                                 results["summary"]["files_scanned"] += 1
                             except Exception as e:
-                                print(f"[Error] Không quét được {rel_path}: {e}")
+                                print(f"[Error] {rel_path}: {e}")
                 
-                # Cleanup
                 os.unlink(zip_path)
                 shutil.rmtree(temp_extract_path)
             
-            # File Python đơn
             elif filename.endswith(".py"):
                 save_path = os.path.join(UPLOAD_FOLDER, filename)
                 uploaded_file.save(save_path)
@@ -104,13 +98,15 @@ def scan():
                     issue["file"] = filename
                 results["issues"] = issues
                 results["summary"]["files_scanned"] = 1
+                
+                # Cleanup
+                try:
+                    os.unlink(save_path)
+                except:
+                    pass
             else:
-                return jsonify({
-                    "success": False,
-                    "error": "Chỉ chấp nhận file .py hoặc .zip"
-                })
+                return jsonify({"success": False, "error": "Chỉ chấp nhận file .py hoặc .zip"})
 
-        # 3. Quét toàn bộ project
         elif scan_project:
             print("[Web] Đang quét toàn bộ project...")
             exclude_dirs = ["uploads", "web_reports", "__pycache__", ".git", "venv", ".venv", "env", "node_modules"]
@@ -130,11 +126,11 @@ def scan():
                                 results["issues"].append(issue)
                             results["summary"]["files_scanned"] += 1
                         except Exception as e:
-                            print(f"[Error] Không quét được {rel_path}: {e}")
+                            print(f"[Error] {rel_path}: {e}")
 
         results["summary"]["total"] = len(results["issues"])
 
-        # Tạo báo cáo
+        # Generate reports
         now = datetime.now().strftime("%Y%m%d_%H%M%S")
         json_name = f"report_{now}.json"
         html_name = f"report_{now}.html"
@@ -142,11 +138,9 @@ def scan():
         json_path = os.path.join(REPORT_FOLDER, json_name)
         html_path = os.path.join(REPORT_FOLDER, html_name)
 
-        # Lưu JSON
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
 
-        # Tạo HTML report
         html_content = generate_html_report(results, now)
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_content)
@@ -163,7 +157,6 @@ def scan():
         import traceback
         print(traceback.format_exc())
         
-        # Cleanup nếu có lỗi
         if temp_extract_path and os.path.exists(temp_extract_path):
             shutil.rmtree(temp_extract_path)
         
@@ -172,23 +165,41 @@ def scan():
 
 @app.route("/fuzz", methods=["POST"])
 def fuzz():
-    """Chạy fuzzing với progress tracking"""
+    """Fuzzing - FIXED: Save file FIRST before threading"""
     global fuzzing_state
     
     if fuzzing_state["running"]:
-        return jsonify({
-            "success": False,
-            "error": "Fuzzing đang chạy! Vui lòng đợi..."
-        })
+        return jsonify({"success": False, "error": "Fuzzing đang chạy!"})
     
     try:
-        iterations = int(request.form.get("iterations", 1000))
+        iterations = int(request.form.get("iterations", 100))
+        code = request.form.get("code", "").strip()
+        uploaded_file = request.files.get("fuzz_file")
+        
+        # Check có input không
+        if not code and not uploaded_file:
+            return jsonify({"success": False, "error": "Vui lòng paste code hoặc upload file!"})
         
         if not is_fuzzing_available():
-            return jsonify({
-                "success": False,
-                "error": "Fuzzing engine không khả dụng"
-            })
+            return jsonify({"success": False, "error": "Fuzzing engine không khả dụng"})
+        
+        # CRITICAL FIX: Save file IMMEDIATELY, BEFORE threading
+        saved_file_path = None
+        if uploaded_file:
+            filename = uploaded_file.filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            safe_filename = f"fuzz_{timestamp}_{filename}"
+            saved_file_path = os.path.join(UPLOAD_FOLDER, safe_filename)
+            
+            # Save ngay lập tức
+            uploaded_file.save(saved_file_path)
+            uploaded_file.close()  # Close file object
+            
+            # Verify file exists
+            if not os.path.exists(saved_file_path):
+                return jsonify({"success": False, "error": "Không thể save file"})
+            
+            print(f"[Fuzzing] File saved: {saved_file_path} ({os.path.getsize(saved_file_path)} bytes)")
         
         # Reset state
         fuzzing_state["running"] = True
@@ -198,7 +209,7 @@ def fuzz():
         fuzzing_state["results"] = None
         
         # Chạy fuzzing trong thread riêng
-        def run_fuzzing_thread():
+        def run_fuzzing_thread(file_path, code_str):
             global fuzzing_state
             
             def progress_callback(current, total, message):
@@ -207,26 +218,57 @@ def fuzz():
                 fuzzing_state["message"] = message
             
             try:
-                results = run_fuzz_on_analyzer(iterations, callback=progress_callback)
+                # Fuzzing từ file đã save
+                if file_path:
+                    print(f"[Fuzzing] Starting fuzz on: {file_path}")
+                    results = fuzz_uploaded_file(file_path, iterations, callback=progress_callback)
+                # Fuzzing từ paste code
+                else:
+                    print("[Fuzzing] Starting fuzz on pasted code")
+                    results = fuzz_user_code(code_str, iterations, callback=progress_callback)
+                
                 fuzzing_state["results"] = results
                 fuzzing_state["message"] = "Fuzzing complete!"
+                print("[Fuzzing] Completed successfully")
+                
             except Exception as e:
+                import traceback
+                error_detail = traceback.format_exc()
+                print(f"[Fuzzing Error] {error_detail}")
                 fuzzing_state["results"] = {"error": str(e)}
                 fuzzing_state["message"] = f"Fuzzing failed: {str(e)}"
             finally:
                 fuzzing_state["running"] = False
+                
+                # Cleanup file sau khi fuzz xong
+                if file_path:
+                    try:
+                        time.sleep(1)  # Đợi 1s để đảm bảo file không còn đang được dùng
+                        if os.path.exists(file_path):
+                            os.unlink(file_path)
+                            print(f"[Fuzzing] Cleaned up: {file_path}")
+                    except Exception as cleanup_error:
+                        print(f"[Fuzzing] Cleanup error: {cleanup_error}")
         
-        thread = threading.Thread(target=run_fuzzing_thread)
+        # Start thread với file đã save hoặc code
+        thread = threading.Thread(target=run_fuzzing_thread, args=(saved_file_path, code))
         thread.daemon = True
         thread.start()
         
-        return jsonify({
-            "success": True,
-            "message": "Fuzzing started! Check progress..."
-        })
+        return jsonify({"success": True, "message": "Fuzzing started!"})
     
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         fuzzing_state["running"] = False
+        
+        # Cleanup nếu có lỗi
+        if 'saved_file_path' in locals() and saved_file_path and os.path.exists(saved_file_path):
+            try:
+                os.unlink(saved_file_path)
+            except:
+                pass
+        
         return jsonify({"success": False, "error": str(e)})
 
 
@@ -244,7 +286,6 @@ def fuzz_progress():
 
 @app.route("/reports/<filename>")
 def serve_report(filename):
-    """Phục vụ file report"""
     file_path = os.path.join(REPORT_FOLDER, filename)
     if os.path.exists(file_path):
         return send_file(file_path)
@@ -253,7 +294,6 @@ def serve_report(filename):
 
 @app.route("/clear_reports", methods=["POST"])
 def clear_reports():
-    """Xóa tất cả reports"""
     try:
         if os.path.exists(REPORT_FOLDER):
             shutil.rmtree(REPORT_FOLDER)
@@ -266,13 +306,38 @@ def clear_reports():
         return jsonify({"success": False, "error": str(e)})
 
 
+def get_code_context(file_path, line_num, context_lines=2):
+    """Lấy code context xung quanh line bị lỗi"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        start = max(0, line_num - context_lines - 1)
+        end = min(len(lines), line_num + context_lines)
+        
+        context = []
+        for i in range(start, end):
+            line_content = lines[i].rstrip()
+            is_error_line = (i == line_num - 1)
+            context.append({
+                'num': i + 1,
+                'content': line_content,
+                'is_error': is_error_line
+            })
+        
+        return context
+    except Exception as e:
+        print(f"Error getting context: {e}")
+        return []
+
+
 def generate_html_report(results, timestamp):
-    """Tạo HTML report ĐẦY ĐỦ với tất cả issues"""
+    """Generate complete HTML report with CODE CONTEXT"""
     issues = results["issues"]
     total = len(issues)
     files_scanned = results["summary"]["files_scanned"]
     
-    # Phân loại theo severity
+    # Calculate severity counts
     severity_counts = {
         "critical": sum(1 for i in issues if i.get("severity") == "critical"),
         "high": sum(1 for i in issues if i.get("severity") == "high"),
@@ -288,200 +353,214 @@ def generate_html_report(results, timestamp):
             issues_by_file[file] = []
         issues_by_file[file].append(issue)
     
-    # HTML template - ĐẦY ĐỦ
+    # Build detailed issues HTML
+    issues_html = ""
+    if total > 0:
+        for file, file_issues in issues_by_file.items():
+            # File header với count
+            issue_count = len(file_issues)
+            issues_html += f"""
+            <div style="margin: 40px 0; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px solid #667eea;">
+                    <h3 style="color: #667eea; font-size: 1.6em; margin: 0; flex: 1;">📄 {file}</h3>
+                    <span style="background: #dc3545; color: white; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 0.9em;">
+                        {issue_count} issue{"s" if issue_count > 1 else ""}
+                    </span>
+                </div>
+            """
+            
+            for idx, issue in enumerate(file_issues, 1):
+                severity = issue.get("severity", "low")
+                severity_colors = {
+                    "critical": "#dc3545",
+                    "high": "#fd7e14",
+                    "medium": "#ffc107",
+                    "low": "#28a745"
+                }
+                color = severity_colors.get(severity, "#6c757d")
+                
+                line = issue.get('line', 'N/A')
+                column = issue.get('column', 'N/A')
+                
+                issues_html += f"""
+                <div style="background: #f8f9fa; border-left: 5px solid {color}; padding: 25px; margin: 20px 0; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <div style="display: inline-block; background: {color}; color: white; padding: 6px 18px; border-radius: 20px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; margin-bottom: 12px;">
+                                {severity}
+                            </div>
+                            <h4 style="font-size: 1.2em; margin: 10px 0; color: #333;">
+                                {idx}. {issue.get('message', 'Unknown issue')}
+                            </h4>
+                        </div>
+                        <div style="background: white; padding: 12px 20px; border-radius: 10px; border: 2px solid {color};">
+                            <strong style="color: {color}; font-size: 1.1em;">
+                                Line {line}, Col {column}
+                            </strong>
+                        </div>
+                    </div>
+                """
+                
+                # CODE CONTEXT với highlight
+                if issue.get('code'):
+                    code_escaped = issue['code'].replace('<', '&lt;').replace('>', '&gt;')
+                    issues_html += f"""
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0; border: 1px solid #ddd;">
+                        <div style="color: #666; font-size: 0.85em; font-weight: 600; margin-bottom: 10px; text-transform: uppercase;">
+                            ⚠️ Problematic Code:
+                        </div>
+                        <pre style="background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 0; border-left: 4px solid {color};"><code style="font-family: 'Courier New', monospace; font-size: 0.95em; line-height: 1.6;">{code_escaped}</code></pre>
+                    </div>
+                    """
+                
+                # RECOMMENDATION
+                if issue.get('recommendation'):
+                    issues_html += f"""
+                    <div style="background: linear-gradient(135deg, #e7f3ff 0%, #d4e9ff 100%); border-left: 4px solid #2196F3; padding: 20px; margin-top: 15px; border-radius: 8px;">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <span style="font-size: 1.5em;">💡</span>
+                            <div>
+                                <strong style="color: #2196F3; font-size: 1.05em; display: block; margin-bottom: 8px;">
+                                    How to Fix:
+                                </strong>
+                                <p style="margin: 0; color: #333; line-height: 1.7; font-size: 0.95em;">
+                                    {issue['recommendation']}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                
+                issues_html += "</div>"
+            
+            issues_html += "</div>"
+    else:
+        issues_html = """
+        <div style="text-align: center; padding: 80px 30px; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 20px; margin: 40px 0; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+            <div style="font-size: 5em; margin-bottom: 25px;">✅</div>
+            <h2 style="color: #28a745; font-size: 2.8em; margin-bottom: 20px; font-weight: 700;">No Issues Found!</h2>
+            <p style="font-size: 1.3em; color: #155724; line-height: 1.8;">Your code appears to be clean and secure.</p>
+        </div>
+        """
+    
+    # Generate full HTML
     html = f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PyScan Pro Report - {timestamp}</title>
+    <title>PyScan Pro Security Report - {timestamp}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            padding: 20px; 
+            line-height: 1.6; 
+            color: #333;
         }}
         .container {{ 
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: #fafafa; 
+            border-radius: 25px; 
+            padding: 50px; 
+            box-shadow: 0 25px 70px rgba(0,0,0,0.3); 
         }}
         h1 {{ 
-            color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center; 
+            font-size: 3.2em; 
+            margin-bottom: 15px;
+            font-weight: 800;
+        }}
+        .timestamp {{
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 50px;
+            font-weight: 500;
+        }}
+        .summary {{ 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 25px; 
+            margin: 40px 0; 
+        }}
+        .stat-card {{ 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 35px; 
+            border-radius: 18px; 
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.35);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }}
+        .stat-card:hover {{
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.45);
+        }}
+        .stat-card h3 {{ font-size: 3.5em; margin-bottom: 10px; font-weight: 800; }}
+        .stat-card p {{ font-size: 1.1em; opacity: 0.95; font-weight: 600; }}
+        .section-title {{
+            color: #333;
+            font-size: 2.3em;
+            margin: 60px 0 30px 0;
+            padding-bottom: 20px;
+            border-bottom: 4px solid #667eea;
             font-weight: 700;
         }}
-        .subtitle {{
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-        }}
-        .summary {{
+        .severity-breakdown {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin: 35px 0;
         }}
-        .stat-card {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
+        .severity-card {{
+            padding: 30px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: transform 0.3s;
-        }}
-        .stat-card:hover {{ transform: translateY(-5px); }}
-        .stat-card h3 {{ font-size: 2.5em; margin-bottom: 5px; font-weight: 700; }}
-        .stat-card p {{ opacity: 0.9; font-size: 1.1em; }}
-        .stat-card.critical {{ background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }}
-        .stat-card.high {{ background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%); }}
-        .stat-card.medium {{ background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); }}
-        .stat-card.low {{ background: linear-gradient(135deg, #6c757d 0%, #495057 100%); }}
-        
-        .file-section {{
-            margin: 30px 0;
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }}
-        .file-header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            font-size: 1.2em;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            transition: transform 0.3s, box-shadow 0.3s;
         }}
-        .issue-count {{
-            background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
+        .severity-card:hover {{
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.35);
         }}
-        
-        .issue {{
-            background: white;
-            padding: 20px;
-            margin: 15px 0;
-            border-left: 5px solid #667eea;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-        }}
-        .issue:hover {{
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }}
-        .issue.critical {{ border-left-color: #dc3545; background: #fff5f5; }}
-        .issue.high {{ border-left-color: #fd7e14; background: #fff8f0; }}
-        .issue.medium {{ border-left-color: #ffc107; background: #fffef0; }}
-        .issue.low {{ border-left-color: #6c757d; background: #f8f9fa; }}
-        
-        .issue-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }}
-        .severity-badge {{
-            display: inline-block;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }}
-        .severity-badge.critical {{ background: #dc3545; color: white; }}
-        .severity-badge.high {{ background: #fd7e14; color: white; }}
-        .severity-badge.medium {{ background: #ffc107; color: #000; }}
-        .severity-badge.low {{ background: #6c757d; color: white; }}
-        
-        .issue-meta {{
-            color: #666;
-            font-size: 0.9em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        .issue-message {{
-            font-size: 1.1em;
-            color: #333;
-            margin: 12px 0;
-            font-weight: 500;
-            line-height: 1.6;
-        }}
-        .category-tag {{
-            background: #e9ecef;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            color: #495057;
-        }}
-        .recommendation {{
-            margin-top: 12px;
-            padding: 15px;
-            background: #d4edda;
-            border-left: 4px solid #28a745;
-            border-radius: 8px;
-            color: #155724;
-        }}
-        .recommendation strong {{
-            color: #28a745;
-            display: block;
-            margin-bottom: 5px;
-        }}
-        
-        .no-issues {{
-            text-align: center;
-            padding: 80px 20px;
-            color: #28a745;
-        }}
-        .no-issues h2 {{
-            font-size: 4em;
-            margin-bottom: 20px;
-        }}
-        .no-issues p {{
-            font-size: 1.5em;
-            color: #666;
-        }}
-        
+        .severity-card h4 {{ font-size: 3em; margin-bottom: 10px; font-weight: 800; }}
+        .severity-card p {{ font-size: 1.1em; opacity: 0.95; font-weight: 600; }}
+        .critical {{ background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }}
+        .high {{ background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%); }}
+        .medium {{ background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); }}
+        .low {{ background: linear-gradient(135deg, #28a745 0%, #218838 100%); }}
         .footer {{
             text-align: center;
-            margin-top: 50px;
-            padding-top: 30px;
-            border-top: 2px solid #eee;
+            margin-top: 70px;
+            padding-top: 35px;
+            border-top: 3px solid #ddd;
             color: #666;
+            font-size: 1em;
         }}
-        .footer p {{ margin: 5px 0; }}
-        
         @media print {{
             body {{ background: white; padding: 0; }}
             .container {{ box-shadow: none; }}
-            .issue {{ page-break-inside: avoid; }}
+            .stat-card, .severity-card {{ box-shadow: none; }}
+        }}
+        @media (max-width: 768px) {{
+            .container {{ padding: 25px; }}
+            h1 {{ font-size: 2em; }}
+            .section-title {{ font-size: 1.6em; }}
         }}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔒 PyScan Pro Report</h1>
-        <p class="subtitle">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+        <h1>🔒 PyScan Pro Security Report</h1>
+        <p class="timestamp">📅 Generated: {timestamp.replace('_', ' ')}</p>
         
         <div class="summary">
             <div class="stat-card">
@@ -492,94 +571,51 @@ def generate_html_report(results, timestamp):
                 <h3>{total}</h3>
                 <p>Total Issues</p>
             </div>
-            <div class="stat-card critical">
-                <h3>{severity_counts['critical']}</h3>
+        </div>
+        
+        <h2 class="section-title">📊 Severity Breakdown</h2>
+        <div class="severity-breakdown">
+            <div class="severity-card critical">
+                <h4>{severity_counts['critical']}</h4>
                 <p>Critical</p>
             </div>
-            <div class="stat-card high">
-                <h3>{severity_counts['high']}</h3>
+            <div class="severity-card high">
+                <h4>{severity_counts['high']}</h4>
                 <p>High</p>
             </div>
-            <div class="stat-card medium">
-                <h3>{severity_counts['medium']}</h3>
+            <div class="severity-card medium">
+                <h4>{severity_counts['medium']}</h4>
                 <p>Medium</p>
             </div>
-            <div class="stat-card low">
-                <h3>{severity_counts['low']}</h3>
+            <div class="severity-card low">
+                <h4>{severity_counts['low']}</h4>
                 <p>Low</p>
             </div>
         </div>
-"""
-    
-    if not issues:
-        html += """
-        <div class="no-issues">
-            <h2>✅</h2>
-            <p><strong>Excellent!</strong></p>
-            <p>No security issues detected!</p>
-            <p style="font-size: 1em; margin-top: 20px; color: #999;">Your code passed all security checks.</p>
-        </div>
-"""
-    else:
-        html += '<h2 style="margin: 40px 0 25px 0; color: #333; font-size: 2em;">📋 Detected Issues by File</h2>'
         
-        for file, file_issues in issues_by_file.items():
-            html += f"""
-        <div class="file-section">
-            <div class="file-header">
-                <span>📄 {file}</span>
-                <span class="issue-count">{len(file_issues)} issue{"s" if len(file_issues) > 1 else ""}</span>
-            </div>
-"""
-            
-            for issue in file_issues:
-                severity = issue.get("severity", "low")
-                message = issue.get("message", "Unknown issue")
-                line = issue.get("line", "?")
-                category = issue.get("category", "")
-                recommendation = issue.get("recommendation", "")
-                cwe = issue.get("cwe_id", "")
-                
-                html += f"""
-            <div class="issue {severity}">
-                <div class="issue-header">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <span class="severity-badge {severity}">{severity}</span>
-                        {f'<span class="category-tag">{category}</span>' if category else ''}
-                        {f'<span class="category-tag">{cwe}</span>' if cwe else ''}
-                    </div>
-                    <span class="issue-meta">
-                        <span>📍 Line {line}</span>
-                    </span>
-                </div>
-                <div class="issue-message">{message}</div>
-                {f'<div class="recommendation"><strong>💡 Recommendation:</strong> {recommendation}</div>' if recommendation else ''}
-            </div>
-"""
-            
-            html += "</div>"  # Close file-section
-    
-    html += """
+        <h2 class="section-title">🔍 Detailed Issues by File</h2>
+        {issues_html}
+        
         <div class="footer">
-            <p style="font-size: 1.2em;"><strong>PyScan Pro v2.1</strong> - Python Static Analysis Security Tool</p>
-            <p>Powered by AST Analysis • Taint Tracking • Regex Patterns • Fuzzing Engine</p>
-            <p style="margin-top: 10px; color: #999;">Cross-Platform • Windows Compatible • Open Source</p>
+            <p style="font-weight: 700; font-size: 1.2em; margin-bottom: 10px;">Generated by PyScan Pro v{APP_VERSION}</p>
+            <p style="color: #999;">Python Security Scanner & Fuzzing Tool</p>
+            <p style="margin-top: 15px; color: #999; font-size: 0.9em;">Report contains detailed analysis with line numbers and fix recommendations</p>
         </div>
     </div>
 </body>
-</html>
-"""
-    
+</html>"""
     return html
 
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("🔒 PyScan Pro v2.1 - Python Security Analyzer")
+    print("🔒 PyScan Pro v2.2.2 - Security Analyzer + Fuzzing")
     print("=" * 70)
     print(f"📁 Project: {APP_ROOT}")
-    print(f"🌐 Web: http://127.0.0.1:5000")
-    print(f"🔥 Fuzzing: Native Python (Cross-platform)")
+    print(f"🌐 Web Interface: http://127.0.0.1:5000")
+    print(f"🔥 Fuzzing Support: Code / .py File / .zip Project")
+    print(f"📊 Reports: HTML + JSON with line numbers")
     print("=" * 70)
+    print("\n✅ Server is ready! Open browser and go to http://127.0.0.1:5000\n")
     
     app.run(host="0.0.0.0", port=5000, debug=True)
