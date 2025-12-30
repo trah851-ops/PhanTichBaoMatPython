@@ -1,0 +1,42 @@
+# Dockerfile.web - Main Web Application (NO Atheris needed here)
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create requirements WITHOUT atheris (only for web app)
+RUN echo "flask>=2.3.0" > requirements-web.txt && \
+    echo "werkzeug>=2.3.0" >> requirements-web.txt && \
+    echo "bandit>=1.7.5" >> requirements-web.txt && \
+    echo "safety>=2.3.0" >> requirements-web.txt && \
+    echo "astroid>=2.15.0" >> requirements-web.txt && \
+    echo "pylint>=2.17.0" >> requirements-web.txt && \
+    echo "packaging>=23.0" >> requirements-web.txt && \
+    echo "requests>=2.31.0" >> requirements-web.txt && \
+    echo "pyyaml>=6.0" >> requirements-web.txt && \
+    echo "jinja2>=3.1.2" >> requirements-web.txt && \
+    echo "astunparse>=1.6.0" >> requirements-web.txt
+
+# Install Python packages (NO atheris)
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements-web.txt
+
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/web_reports /app/analyzer /app/templates
+
+# Copy application files
+COPY web_app.py .
+COPY analyzer ./analyzer/
+COPY templates ./templates/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:5000', timeout=2)" || exit 1
+
+EXPOSE 5000
+
+CMD ["python", "-u", "web_app.py"]
