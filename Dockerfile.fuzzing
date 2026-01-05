@@ -1,0 +1,54 @@
+# Dockerfile.fuzzing - FIXED VERSION
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+# Install ALL dependencies needed
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    clang \
+    llvm \
+    build-essential \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Clang as default
+ENV CC=clang
+ENV CXX=clang++
+
+# Upgrade pip
+RUN pip3 install --upgrade pip setuptools wheel
+
+# Copy requirements FIRST
+COPY requirements.txt .
+
+# Install Python packages
+RUN pip3 install --no-cache-dir -r requirements.txt || \
+    echo "⚠️ Some packages failed, continuing..."
+
+# Verify critical packages
+RUN python3 -c "import flask; print('✅ Flask OK')" && \
+    python3 -c "import requests; print('✅ Requests OK')"
+
+# Try Atheris (optional - may fail)
+RUN python3 -c "import atheris; print('✅ Atheris OK')" || \
+    echo "⚠️ Atheris not available - will use fallback mode"
+
+# Create directories
+RUN mkdir -p /fuzzing/corpus /fuzzing/crashes /fuzzing/results
+
+# Copy application files
+COPY atheris_real_fuzzer.py .
+COPY fuzzing_server.py .
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python3 -c "import requests; requests.get('http://localhost:8001/health', timeout=3)" || exit 1
+
+EXPOSE 8001
+
+# Use python -u for unbuffered output (no need chmod)
+CMD ["python3", "-u", "fuzzing_server.py"]

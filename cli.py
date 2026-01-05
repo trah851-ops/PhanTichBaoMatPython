@@ -1,5 +1,4 @@
 # cli.py - Python Security Scanner CLI (PyScan Pro)
-# Tác giả: [Tên bạn] - Đồ án tốt nghiệp xuất sắc
 # Chạy: python cli.py . --out-html report.html --verbose
 
 #!/usr/bin/env python3
@@ -13,7 +12,7 @@ from typing import List, Dict
 
 # Import từ analyzer (dự án của bạn)
 from analyzer.core import Analyzer
-from analyzer.fuzz import run_fuzz_on_analyzer, is_fuzzing_available
+from analyzer.fuzzing import run_fuzz_on_analyzer, is_fuzzing_available
 
 class ProjectScanner:
     def __init__(self, project_path: str, exclude_dirs: List[str] = None):

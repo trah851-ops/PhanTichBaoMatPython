@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyScan Pro v2.2</title>
+    <title>PyScan Pro v3.1</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -200,6 +200,23 @@
             background: #fff5f5;
             border-radius: 8px;
         }
+        .vuln-item.critical { border-left-color: #dc3545; background: #fff5f5; }
+        .vuln-item.high { border-left-color: #fd7e14; background: #fff8f0; }
+        .vuln-item.medium { border-left-color: #ffc107; background: #fffbf0; }
+        .vuln-item.low { border-left-color: #28a745; background: #f0fff4; }
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            margin-right: 10px;
+        }
+        .severity-badge.critical { background: #dc3545; }
+        .severity-badge.high { background: #fd7e14; }
+        .severity-badge.medium { background: #ffc107; color: #333; }
+        .severity-badge.low { background: #28a745; }
         input[type="number"] {
             padding: 12px;
             border: 2px solid #ddd;
@@ -214,7 +231,7 @@
     <div class="container">
         <header style="text-align: center; margin-bottom: 40px;">
             <h1>🔒 PyScan Pro</h1>
-            <div class="version-badge">v2.2 • ZIP Fuzzing Support</div>
+            <div class="version-badge">v3.1 • Advanced Fuzzing</div>
             <p class="subtitle">Python Security Scanner + Attack Simulation</p>
         </header>
         
@@ -263,24 +280,23 @@
         <div id="fuzz-tab" class="tab-content">
             <h2>🔥 Fuzzing Attack Test</h2>
             <p style="margin: 20px 0; font-size: 1.1em; color: #666;">
-                Test code/file/ZIP với payload tấn công thật (SQL injection, command injection, XSS, etc.)
+                Test code với payload tấn công thật (SQL injection, command injection, XSS, etc.)
             </p>
             
             <div class="info-box">
                 <h4>⚡ Features:</h4>
                 <ul>
-                    <li>✅ Test single file .py</li>
-                    <li>✅ Test entire ZIP project (tự động quét tất cả file .py)</li>
-                    <li>✅ Phát hiện entry points: input(), request, database, file operations</li>
-                    <li>✅ Tự động tạo 50+ loại attack payloads</li>
-                    <li>✅ Risk score + recommendations</li>
+                    <li>✅ Regex + AST dual detection</li>
+                    <li>✅ Detect: eval, exec, os.system, pickle, yaml.load...</li>
+                    <li>✅ Find entry points: input(), request.form...</li>
+                    <li>✅ Risk score + detailed recommendations</li>
                 </ul>
             </div>
             
             <h3 style="margin: 30px 0 15px 0;">Choose fuzzing mode:</h3>
             <div class="fuzz-mode-selector">
                 <button class="mode-btn active" onclick="selectFuzzMode('paste')">📝 Paste Code</button>
-                <button class="mode-btn" onclick="selectFuzzMode('upload')">📤 Upload File/ZIP</button>
+                <button class="mode-btn" onclick="selectFuzzMode('upload')">📤 Upload File</button>
             </div>
             
             <!-- Paste Code Mode -->
@@ -288,13 +304,10 @@
                 <textarea id="fuzz-code-input" placeholder="# Paste code to fuzz test
 import os
 
-def login(username):
-    query = f&quot;SELECT * FROM users WHERE name='{username}'&quot;
-    cursor.execute(query)  # SQL injection!
-
-def run():
-    cmd = input('Command: ')
-    os.system(cmd)  # Command injection!
+def vulnerable_function(user_input):
+    os.system(f&quot;echo {user_input}&quot;)    # Command injection
+    result = eval(user_input)          # Code injection
+    return result
 "></textarea>
             </div>
             
@@ -302,9 +315,8 @@ def run():
             <div id="fuzz-upload-area" class="fuzz-input-area">
                 <div class="file-upload file-upload-small" onclick="document.getElementById('fuzz-file-input').click()">
                     <div style="font-size: 3em;">📦</div>
-                    <h3>Upload .py or .zip file</h3>
-                    <p>For ZIP: will fuzz all Python files inside</p>
-                    <input type="file" id="fuzz-file-input" accept=".py,.zip" onchange="handleFuzzFileUpload(event)">
+                    <h3>Upload .py file</h3>
+                    <input type="file" id="fuzz-file-input" accept=".py" onchange="handleFuzzFileUpload(event)">
                     <p id="fuzz-file-name" style="margin-top: 10px; color: #28a745; font-weight: 600;"></p>
                 </div>
             </div>
@@ -327,6 +339,7 @@ def run():
                 <p id="progress-message" style="text-align: center; color: #666; margin-top: 10px;"></p>
                 <div class="progress-stats">
                     <div class="stat-box"><h3 id="stat-tests">0</h3><p>Tests</p></div>
+                    <div class="stat-box"><h3 id="stat-entry">0</h3><p>Entry Points</p></div>
                     <div class="stat-box"><h3 id="stat-vulns">0</h3><p>Vulnerabilities</p></div>
                     <div class="stat-box"><h3 id="stat-risk">0</h3><p>Risk Score</p></div>
                 </div>
@@ -382,9 +395,8 @@ def run():
             fuzzUploadedFile = event.target.files[0];
             const el = document.getElementById('fuzz-file-name');
             if (fuzzUploadedFile) {
-                const type = fuzzUploadedFile.name.endsWith('.zip') ? '📦 ZIP Project' : '🐍 Python File';
                 const size = (fuzzUploadedFile.size / 1024).toFixed(2) + ' KB';
-                el.textContent = `${type}: ${fuzzUploadedFile.name} (${size})`;
+                el.textContent = `🐍 ${fuzzUploadedFile.name} (${size})`;
             }
         }
         
@@ -475,10 +487,16 @@ def run():
                 formData.append('fuzz_file', fuzzUploadedFile);
             }
             
-            if (!confirm(`Start fuzzing with ${iterations} payloads${fuzzUploadedFile && fuzzUploadedFile.name.endsWith('.zip') ? ' per file' : ''}?`)) return;
+            if (!confirm(`Start fuzzing with ${iterations} payloads?`)) return;
             
             document.getElementById('fuzz-progress').classList.add('active');
             document.getElementById('result').classList.remove('active');
+            
+            // Reset stats
+            document.getElementById('stat-tests').textContent = '0';
+            document.getElementById('stat-entry').textContent = '0';
+            document.getElementById('stat-vulns').textContent = '0';
+            document.getElementById('stat-risk').textContent = '0';
             
             try {
                 const res = await fetch('/fuzz', { method: 'POST', body: formData });
@@ -487,7 +505,7 @@ def run():
                     progressInterval = setInterval(checkFuzzProgress, 500);
                 } else {
                     document.getElementById('fuzz-progress').classList.remove('active');
-                    showResult(false, data.error);
+                    showResult(false, data.error || 'Failed to start fuzzing');
                 }
             } catch (e) {
                 document.getElementById('fuzz-progress').classList.remove('active');
@@ -500,88 +518,105 @@ def run():
                 const res = await fetch('/fuzz/progress');
                 const data = await res.json();
                 
+                console.log('Progress data:', data); // Debug
+                
                 const percent = data.total > 0 ? Math.round((data.progress / data.total) * 100) : 0;
                 document.getElementById('progress-bar').style.width = percent + '%';
                 document.getElementById('progress-bar').textContent = percent + '%';
-                document.getElementById('progress-message').textContent = data.message;
-                document.getElementById('stat-tests').textContent = data.progress;
+                document.getElementById('progress-message').textContent = data.message || 'Processing...';
                 
                 if (!data.running && data.results) {
                     clearInterval(progressInterval);
                     document.getElementById('fuzz-progress').classList.remove('active');
                     
-                    const results = data.results;
-                    if (results.error) {
-                        showResult(false, results.error);
-                    } else {
-                        // Check if project fuzzing or single file
-                        const isProject = results.total_files !== undefined;
-                        
-                        if (isProject) {
-                            // Project fuzzing result
-                            document.getElementById('stat-vulns').textContent = results.total_vulnerabilities || 0;
-                            document.getElementById('stat-risk').textContent = results.aggregate_risk_score + '/100';
-                            
-                            let html = `<h3>${results.aggregate_risk_score > 70 ? '⚠️ High Risk Project!' : results.aggregate_risk_score > 40 ? '⚡ Medium Risk' : '✅ Low Risk'}</h3>`;
-                            html += `<p style="font-size: 1.1em; margin: 15px 0;">
-                                <strong>📦 PROJECT FUZZING RESULTS</strong><br>
-                                Files Tested: ${results.files_tested}/${results.total_files}<br>
-                                Total Tests: ${results.total_tests}<br>
-                                Entry Points: ${results.total_entry_points}<br>
-                                Vulnerabilities: ${results.total_vulnerabilities}<br>
-                                Risk Score: ${results.aggregate_risk_score}/100
-                            </p>`;
-                            
-                            if (results.critical_files && results.critical_files.length > 0) {
-                                html += '<div class="vuln-list"><h4>🔴 Critical Files:</h4>';
-                                results.critical_files.forEach(f => {
-                                    html += `<div class="vuln-item">
-                                        <strong>📄 ${f.file}</strong><br>
-                                        Risk: ${f.risk_score}/100 | Vulnerabilities: ${f.vulnerabilities}
-                                    </div>`;
-                                });
-                                html += '</div>';
-                            }
-                            
-                            const resultDiv = document.getElementById('result');
-                            resultDiv.className = 'result active ' + (results.aggregate_risk_score > 50 ? 'error' : 'success');
-                            resultDiv.innerHTML = html;
-                        } else {
-                            // Single file fuzzing result
-                            const vulns = results.vulnerabilities_found || [];
-                            document.getElementById('stat-vulns').textContent = vulns.length;
-                            document.getElementById('stat-risk').textContent = results.risk_score + '/100';
-                            
-                            let html = `<h3>${results.risk_score > 70 ? '⚠️ High Risk!' : results.risk_score > 40 ? '⚡ Medium Risk' : '✅ Low Risk'}</h3>`;
-                            html += `<p style="font-size: 1.1em; margin: 15px 0;">
-                                Tests: ${results.total_tests}<br>
-                                Entry Points: ${results.entry_points}<br>
-                                Vulnerabilities: ${vulns.length}<br>
-                                Risk Score: ${results.risk_score}/100
-                            </p>`;
-                            
-                            if (vulns.length > 0) {
-                                html += '<div class="vuln-list"><h4>🔴 Vulnerabilities:</h4>';
-                                vulns.slice(0, 10).forEach(v => {
-                                    html += `<div class="vuln-item">
-                                        <strong>${v.attack_type}</strong> at ${v.entry_point} (line ${v.line})<br>
-                                        <small>${v.reason}</small><br>
-                                        <small style="color: #28a745;"><strong>Fix:</strong> ${v.recommendation}</small>
-                                    </div>`;
-                                });
-                                html += '</div>';
-                            }
-                            
-                            const resultDiv = document.getElementById('result');
-                            resultDiv.className = 'result active ' + (results.risk_score > 50 ? 'error' : 'success');
-                            resultDiv.innerHTML = html;
-                        }
-                    }
+                    displayFuzzResults(data.results);
                 }
             } catch (e) {
                 clearInterval(progressInterval);
-                console.error(e);
+                console.error('Progress check error:', e);
             }
+        }
+        
+        function displayFuzzResults(results) {
+            console.log('Displaying results:', results); // Debug
+            
+            if (results.error) {
+                showResult(false, 'Fuzzing error: ' + results.error);
+                return;
+            }
+            
+            // CRITICAL FIX: Parse correctly
+            let vulnerabilities = results.vulnerabilities || [];
+            let entryPoints = results.entry_points || [];
+            let statistics = results.statistics || {};
+            let riskScore = statistics.risk_score || results.risk_score || 0;
+            let totalTests = statistics.runs || results.total_tests || 0;
+            
+            // Update stats display
+            document.getElementById('stat-tests').textContent = totalTests;
+            document.getElementById('stat-entry').textContent = entryPoints.length;
+            document.getElementById('stat-vulns').textContent = vulnerabilities.length;
+            document.getElementById('stat-risk').textContent = riskScore + '/100';
+            
+            // Determine risk level
+            let riskClass = 'success';
+            let riskIcon = '✅';
+            let riskText = 'Low Risk';
+            
+            if (riskScore >= 70 || vulnerabilities.length >= 3) {
+                riskClass = 'error';
+                riskIcon = '🔴';
+                riskText = 'High Risk!';
+            } else if (riskScore >= 40 || vulnerabilities.length >= 1) {
+                riskClass = 'error';
+                riskIcon = '⚠️';
+                riskText = 'Medium Risk';
+            }
+            
+            let html = `<h3>${riskIcon} ${riskText}</h3>`;
+            html += `<p style="font-size: 1.1em; margin: 15px 0;">
+                <strong>Tests:</strong> ${totalTests}<br>
+                <strong>Entry Points:</strong> ${entryPoints.length}<br>
+                <strong>Vulnerabilities:</strong> ${vulnerabilities.length}<br>
+                <strong>Risk Score:</strong> ${riskScore}/100
+            </p>`;
+            
+            // Display vulnerabilities
+            if (vulnerabilities.length > 0) {
+                html += '<div class="vuln-list"><h4>🐛 Vulnerabilities Found:</h4>';
+                
+                vulnerabilities.forEach((vuln, index) => {
+                    const severity = vuln.severity || 'low';
+                    html += `
+                        <div class="vuln-item ${severity}">
+                            <span class="severity-badge ${severity}">${severity.toUpperCase()}</span>
+                            <strong>${index + 1}. Line ${vuln.line}: ${vuln.function || vuln.type}</strong><br>
+                            <p style="margin: 8px 0;">${vuln.message || 'Security vulnerability detected'}</p>
+                            ${vuln.code ? `<code style="display: block; background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 8px 0;">${escapeHtml(vuln.code)}</code>` : ''}
+                            ${vuln.recommendation ? `
+                                <div style="background: #e7f3ff; padding: 12px; border-radius: 5px; margin-top: 10px; border-left: 3px solid #2196F3;">
+                                    <strong>💡 How to Fix:</strong><br>
+                                    ${vuln.recommendation}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            } else {
+                html += '<p style="color: #28a745; font-weight: 600; margin-top: 15px;">✅ No vulnerabilities detected!</p>';
+            }
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result active ' + riskClass;
+            resultDiv.innerHTML = html;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     </script>
 </body>

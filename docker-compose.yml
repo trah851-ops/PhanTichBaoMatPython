@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # Main Web Application
+  pyscan-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: pyscan_web
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./analyzer:/app/analyzer
+      - ./templates:/app/templates
+      - ./uploads:/app/uploads
+      - ./web_reports:/app/web_reports
+    environment:
+      - FLASK_ENV=development
+      - FUZZING_SERVICE_URL=http://fuzzing:8001
+    depends_on:
+      - fuzzing
+    networks:
+      - pyscan_network
+    restart: unless-stopped
+
+  # Fuzzing Service - BUILD FROM Dockerfile.fuzzing
+  fuzzing:
+    build:
+      context: .
+      dockerfile: Dockerfile.fuzzing
+    container_name: pyscan_fuzzing
+    ports:
+      - "8001:8001"
+    volumes:
+      - fuzzing_corpus:/fuzzing/corpus
+      - fuzzing_crashes:/fuzzing/crashes
+      - fuzzing_results:/fuzzing/results
+    networks:
+      - pyscan_network
+    restart: unless-stopped
+
+volumes:
+  fuzzing_corpus:
+  fuzzing_crashes:
+  fuzzing_results:
+
+networks:
+  pyscan_network:
+    driver: bridge  

@@ -11,7 +11,7 @@ from analyzer.core import Analyzer
 import threading
 import time
 import requests
-import html
+import html 
 
 app = Flask(__name__)
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -534,6 +534,8 @@ def generate_html_report(results, timestamp):
             
             issues_html += "</div>"
     
+    # Add import for html.escape at the top of function
+    
     html_content = f"""<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8">
@@ -648,7 +650,6 @@ def generate_html_report(results, timestamp):
 </html>"""
     
     return html_content
-
 
 if __name__ == "__main__":
     print("=" * 70)
