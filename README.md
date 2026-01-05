@@ -187,10 +187,6 @@ def vulnerable_function(user_input):
     
     # Deserialization
     pickle.loads(user_input)
-    
-    # Hardcoded Secrets
-    password = "admin123"
-    api_key = "sk-1234567890abcdef"
 ```
 
 **Kết quả phân tích:**
